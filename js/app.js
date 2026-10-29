@@ -80,7 +80,7 @@
       add("line", { x1: p[0], y1: y, x2: p[0], y2: y + 24, class: "string" });
       add("rect", { x: p[0] - 34, y: y + 24, width: 68, height: 28, rx: 6, class: "weight" });
       add("text", { x: p[0], y: y + 43, class: "wtext" }, p[1].w);
-      add("text", { x: p[0], y: y - 14, class: "ctext" }, p[1].c + "%");
+      add("text", { x: p[0], y: y - 14, class: "ctext" }, p[1].label || p[1].c + "%");
     });
     add("text", { x: xm, y: y + 34, class: "ctext mid" }, f.mid + "%");
     add("text", { x: (x0 + xm) / 2, y: y - 6, class: "dtext" }, f.distL);
