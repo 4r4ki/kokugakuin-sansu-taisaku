@@ -3,7 +3,7 @@
 
   var STORAGE_KEY = "noudo-master-v1";
   var app = document.getElementById("app");
-  var state = { view: "list", category: "すべて", current: null };
+  var state = { view: "list", category: "すべて", current: null, practice: null, practiceType: null };
   var record = loadRecord();
 
   function loadRecord() {
@@ -159,16 +159,11 @@
     window.scrollTo(0, 0);
   }
 
-  function renderProblem() {
-    var cur = state.current;
-    var idx = PROBLEMS.findIndex(function (p) { return p.id === cur.id; });
-    var p = PROBLEMS[idx];
-
-    app.appendChild(el("button", { class: "link back", text: "← 問題一覧", onclick: function () { state.view = "list"; render(); } }));
-
+  // 問題文・解答欄・ヒント・解説（固定問題と練習で共通）
+  function renderQuestion(p, cur, header, onAnswer) {
     app.appendChild(el("section", { class: "problem" }, [
       el("div", { class: "card-top" }, [
-        el("span", { class: "num", text: "問" + p.id }),
+        el("span", { class: "num", text: header }),
         el("span", { class: "level", text: stars(p.level) }),
         el("span", { class: "card-cat", text: p.category }),
       ]),
@@ -186,11 +181,7 @@
         if (isNaN(v)) return;
         var ok = Math.abs(v - p.answer.value) < 1e-6;
         cur.result = ok ? "ok" : "ng";
-        var r = record[p.id] || { tries: 0, correct: false };
-        r.tries += 1;
-        if (ok) r.correct = true;
-        record[p.id] = r;
-        saveRecord();
+        onAnswer(ok);
         render();
       },
     }, [input, el("span", { class: "unit", text: p.answer.unit }), el("button", { class: "btn primary", type: "submit", text: "答え合わせ" })]);
@@ -244,14 +235,83 @@
     }
     app.appendChild(exp);
 
+    if (cur.focus !== false) input.focus({ preventScroll: true });
+    cur.focus = false;
+  }
+
+  function renderProblem() {
+    var cur = state.current;
+    var idx = PROBLEMS.findIndex(function (p) { return p.id === cur.id; });
+    var p = PROBLEMS[idx];
+
+    app.appendChild(el("button", { class: "link back", text: "← 問題一覧", onclick: function () { state.view = "list"; render(); } }));
+
+    renderQuestion(p, cur, "問" + p.id, function (ok) {
+      var r = record[p.id] || { tries: 0, correct: false };
+      r.tries += 1;
+      if (ok) r.correct = true;
+      record[p.id] = r;
+      saveRecord();
+    });
+
     // 前後
     var nav = el("div", { class: "row pager" });
     if (idx > 0) nav.appendChild(el("button", { class: "btn ghost", text: "← 前の問題", onclick: function () { openProblem(PROBLEMS[idx - 1].id); } }));
     if (idx < PROBLEMS.length - 1) nav.appendChild(el("button", { class: "btn ghost", text: "次の問題 →", onclick: function () { openProblem(PROBLEMS[idx + 1].id); } }));
     app.appendChild(nav);
+  }
 
-    if (cur.focus !== false) input.focus({ preventScroll: true });
-    cur.focus = false;
+  // ---------- 練習（自動生成） ----------
+
+  function newPractice() {
+    state.practice = { problem: PRACTICE.make(state.practiceType), hints: 0, steps: 0, result: null, answered: false };
+  }
+
+  function renderPractice() {
+    if (!state.practice) newPractice();
+    var cur = state.practice;
+    var stats = record._practice || { tries: 0, correct: 0, streak: 0, best: 0 };
+
+    app.appendChild(el("p", { class: "lead", text: "数字が毎回かわる練習問題です。解き方は同じなので、何回でもチャレンジしよう。" }));
+
+    var types = [{ key: null, name: "ランダム" }].concat(PRACTICE.types);
+    app.appendChild(el("div", { class: "filter" }, types.map(function (t) {
+      return el("button", {
+        class: "chip" + (state.practiceType === t.key ? " active" : ""),
+        text: t.name,
+        onclick: function () { state.practiceType = t.key; newPractice(); render(); },
+      });
+    })));
+
+    app.appendChild(el("div", { class: "stats" }, [
+      el("span", { text: "正解 " + stats.correct + " / " + stats.tries + "問" }),
+      el("span", { text: "連続正解 " + stats.streak }),
+      el("span", { text: "最高 " + stats.best + "連続" }),
+    ]));
+
+    renderQuestion(cur.problem, cur, "練習", function (ok) {
+      // 1問につき最初の答えだけを成績に入れる
+      if (cur.answered) return;
+      cur.answered = true;
+      stats.tries += 1;
+      if (ok) {
+        stats.correct += 1;
+        stats.streak += 1;
+        stats.best = Math.max(stats.best, stats.streak);
+      } else {
+        stats.streak = 0;
+      }
+      record._practice = stats;
+      saveRecord();
+    });
+
+    app.appendChild(el("div", { class: "row pager" }, [
+      el("button", {
+        class: "btn primary",
+        text: "次の練習問題（数字をかえる）→",
+        onclick: function () { newPractice(); render(); window.scrollTo(0, 0); },
+      }),
+    ]));
   }
 
   // ---------- コツ ----------
@@ -283,6 +343,7 @@
     });
     if (state.view === "list") renderList();
     else if (state.view === "tips") renderTips();
+    else if (state.view === "practice") renderPractice();
     else renderProblem();
   }
 

@@ -99,6 +99,8 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
 .badge.try { background: var(--hint-soft); color: var(--hint); }
 
+.stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+
 .link { background: none; border: none; color: var(--accent); padding: 0; }
 .back { margin-bottom: 8px; }
 
