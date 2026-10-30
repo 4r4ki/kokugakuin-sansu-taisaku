@@ -10,7 +10,7 @@
     noudo: { list: window.PROBLEMS, prefix: "", view: "list", label: "濃度",
       lead: "入試によく出る濃度の問題を集めました。まず自分で解いてから、ヒント・解説を見よう。" },
     hard: { list: window.HARD_PROBLEMS, prefix: "h", view: "hard", label: "難問",
-      lead: "角度・面積・特殊算・速さなどの難問です。図や表をかいて、じっくり考えよう。答えが分数のときは「3/11」や「16と4/11」のように入力できます。" },
+      lead: "角度・面積・特殊算・速さ・売買損益などの難問です。図や表をかいて、じっくり考えよう。答えが分数のときは「3/11」や「16と4/11」のように入力できます。" },
   };
   var record = loadRecord();
 
