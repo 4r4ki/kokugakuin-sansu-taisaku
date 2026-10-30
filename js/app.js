@@ -358,11 +358,25 @@
     document.getElementById("progress").textContent = "正解した問題：" + text.join("　");
   }
 
+  // いま表示しているコーナー（濃度マスター / 難問チャレンジ）
+  function currentSection() {
+    if (state.view === "hard") return "hard";
+    if (state.view === "problem") return state.set;
+    return "noudo";
+  }
+
   function render() {
     app.innerHTML = "";
+    var section = currentSection();
+    document.body.setAttribute("data-section", section);
+    document.querySelectorAll(".section-tab").forEach(function (t) {
+      t.classList.toggle("active", t.getAttribute("data-section") === section);
+    });
+    // 「問題・練習・コツ」は濃度マスターの中のメニュー
+    document.getElementById("subtabs").hidden = section !== "noudo";
     document.querySelectorAll(".tab").forEach(function (t) {
       var v = t.getAttribute("data-view");
-      t.classList.toggle("active", v === state.view || (state.view === "problem" && v === SETS[state.set].view));
+      t.classList.toggle("active", v === state.view || (state.view === "problem" && v === "list"));
     });
     if (state.view === "list") renderList("noudo");
     else if (state.view === "hard") renderList("hard");
@@ -370,6 +384,13 @@
     else if (state.view === "practice") renderPractice();
     else renderProblem();
   }
+
+  document.querySelectorAll(".section-tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      state.view = t.getAttribute("data-section") === "hard" ? "hard" : "list";
+      render();
+    });
+  });
 
   document.querySelectorAll(".tab").forEach(function (t) {
     t.addEventListener("click", function () {
