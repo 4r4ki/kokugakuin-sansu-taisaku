@@ -147,7 +147,7 @@
         onclick: function () { openProblem(setKey, p.id); },
       }, [
         el("div", { class: "card-top" }, [
-          el("span", { class: "num", text: "問" + p.id }),
+          el("span", { class: "num", text: "問" + (p.no || p.id) }),
           el("span", { class: "level", text: stars(p.level) }),
           badge,
         ]),
@@ -261,7 +261,7 @@
 
     app.appendChild(el("button", { class: "link back", text: "← " + set.label + "の問題一覧", onclick: function () { state.view = set.view; render(); } }));
 
-    renderQuestion(p, cur, "問" + p.id, function (ok) {
+    renderQuestion(p, cur, "問" + (p.no || p.id), function (ok) {
       var key = set.prefix + p.id;
       var r = record[key] || { tries: 0, correct: false };
       r.tries += 1;

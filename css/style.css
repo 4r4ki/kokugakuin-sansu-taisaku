@@ -225,6 +225,7 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
 .geo .shade { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
 .geo .mark { stroke: var(--ng); stroke-width: 1.5; fill: none; }
 .geo .dot { fill: var(--text); }
+.geo .blank { fill: var(--panel); stroke: var(--text); stroke-width: 2; }
 .geo text { fill: var(--text); font-size: 14px; text-anchor: middle; dominant-baseline: middle; }
 .geo .lbl { fill: var(--ng); font-weight: bold; font-size: 13px; }
 
