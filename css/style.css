@@ -55,13 +55,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .app-header h1 { margin: 0; font-size: 1.3rem; }
 .app-header .sub { font-size: 0.8rem; color: var(--muted); font-weight: normal; margin-left: 6px; }
 
-.tabs { display: flex; gap: 4px; margin-top: 8px; }
+.tabs { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; }
 .tab {
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
   padding: 6px 12px;
   color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
 
@@ -185,6 +187,15 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
 .tenbin .mid { fill: var(--accent); }
 .tenbin .dtext { fill: var(--ng); font-size: 13px; font-weight: bold; }
 .tenbin .note { fill: var(--muted); font-size: 13px; }
+
+.geo svg { width: 100%; max-width: 340px; display: block; margin: 0 auto; }
+.geo .ln { stroke: var(--text); stroke-width: 2; fill: none; stroke-linejoin: round; }
+.geo .thin { stroke: var(--muted); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+.geo .shade { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.geo .mark { stroke: var(--ng); stroke-width: 1.5; fill: none; }
+.geo .dot { fill: var(--text); }
+.geo text { fill: var(--text); font-size: 14px; text-anchor: middle; dominant-baseline: middle; }
+.geo .lbl { fill: var(--ng); font-weight: bold; font-size: 13px; }
 
 .fig-table { border-collapse: collapse; font-size: 0.9rem; min-width: 280px; }
 .fig-table th, .fig-table td { border: 1px solid var(--line); padding: 4px 10px; text-align: center; }

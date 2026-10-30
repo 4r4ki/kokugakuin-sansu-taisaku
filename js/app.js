@@ -3,7 +3,15 @@
 
   var STORAGE_KEY = "noudo-master-v1";
   var app = document.getElementById("app");
-  var state = { view: "list", category: "すべて", current: null, practice: null, practiceType: null };
+  var state = { view: "list", set: "noudo", category: { noudo: "すべて", hard: "すべて" }, current: null, practice: null, practiceType: null };
+
+  // 問題セット（濃度 / 難問）。記録のキーは prefix + id
+  var SETS = {
+    noudo: { list: window.PROBLEMS, prefix: "", view: "list", label: "濃度",
+      lead: "入試によく出る濃度の問題を集めました。まず自分で解いてから、ヒント・解説を見よう。" },
+    hard: { list: window.HARD_PROBLEMS, prefix: "h", view: "hard", label: "難問",
+      lead: "角度・面積・特殊算・速さなどの難問です。図や表をかいて、じっくり考えよう。答えが分数のときは「3/11」や「16と4/11」のように入力できます。" },
+  };
   var record = loadRecord();
 
   function loadRecord() {
@@ -40,13 +48,14 @@
     return "★★★".slice(0, level) + "☆☆☆".slice(0, 3 - level);
   }
 
-  // 全角数字・小数点・分数（3/4）を受け付ける
+  // 全角数字・小数点・分数（3/4）・帯分数（16と4/11、16 4/11）を受け付ける
   function parseAnswer(text) {
-    var s = String(text)
-      .replace(/[０-９．／－]/g, function (ch) {
-        return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
-      })
-      .replace(/[^0-9./-]/g, "");
+    var s = String(text).replace(/[０-９．／－　]/g, function (ch) {
+      return ch === "　" ? " " : String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+    });
+    var mixed = s.match(/^\s*(\d+)\s*(?:と|\s)\s*(\d+)\s*\/\s*(\d+)/);
+    if (mixed) return parseInt(mixed[1], 10) + parseInt(mixed[2], 10) / parseInt(mixed[3], 10);
+    s = s.replace(/[^0-9./-]/g, "");
     if (!s) return NaN;
     if (s.indexOf("/") >= 0) {
       var parts = s.split("/");
@@ -104,36 +113,38 @@
 
   function figure(f) {
     if (!f) return null;
+    if (f.type === "svg") return el("div", { class: "fig geo", html: f.svg });
     var node = f.type === "tenbin" ? tenbinSvg(f) : tableFig(f);
     return el("div", { class: "fig" }, [node]);
   }
 
   // ---------- 一覧 ----------
 
-  function renderList() {
+  function renderList(setKey) {
+    var set = SETS[setKey];
     var cats = ["すべて"];
-    PROBLEMS.forEach(function (p) {
+    set.list.forEach(function (p) {
       if (cats.indexOf(p.category) < 0) cats.push(p.category);
     });
 
     var filter = el("div", { class: "filter" }, cats.map(function (c) {
       return el("button", {
-        class: "chip" + (state.category === c ? " active" : ""),
+        class: "chip" + (state.category[setKey] === c ? " active" : ""),
         text: c,
-        onclick: function () { state.category = c; render(); },
+        onclick: function () { state.category[setKey] = c; render(); },
       });
     }));
 
     var list = el("div", { class: "cards" });
-    PROBLEMS.filter(function (p) {
-      return state.category === "すべて" || p.category === state.category;
+    set.list.filter(function (p) {
+      return state.category[setKey] === "すべて" || p.category === state.category[setKey];
     }).forEach(function (p) {
-      var r = record[p.id];
+      var r = record[set.prefix + p.id];
       var badge = r && r.correct ? el("span", { class: "badge ok", text: "正解" })
         : r ? el("span", { class: "badge try", text: "挑戦中" }) : null;
       list.appendChild(el("button", {
         class: "card",
-        onclick: function () { openProblem(p.id); },
+        onclick: function () { openProblem(setKey, p.id); },
       }, [
         el("div", { class: "card-top" }, [
           el("span", { class: "num", text: "問" + p.id }),
@@ -145,15 +156,16 @@
       ]));
     });
 
-    app.appendChild(el("p", { class: "lead", text: "入試によく出る濃度の問題を集めました。まず自分で解いてから、ヒント・解説を見よう。" }));
+    app.appendChild(el("p", { class: "lead", text: set.lead }));
     app.appendChild(filter);
     app.appendChild(list);
   }
 
   // ---------- 問題 ----------
 
-  function openProblem(id) {
+  function openProblem(setKey, id) {
     state.view = "problem";
+    state.set = setKey;
     state.current = { id: id, hints: 0, steps: 0, result: null };
     render();
     window.scrollTo(0, 0);
@@ -169,6 +181,7 @@
       ]),
       el("h2", { text: p.title }),
       el("p", { class: "question", text: p.question }),
+      figure(p.fig),
     ]));
 
     // 解答欄
@@ -231,7 +244,7 @@
       ]);
       exp.appendChild(btns);
     } else {
-      exp.appendChild(el("p", { class: "final", html: "答え：<b>" + p.answer.value + p.answer.unit + "</b>" }));
+      exp.appendChild(el("p", { class: "final", html: "答え：<b>" + (p.answer.text || p.answer.value + p.answer.unit) + "</b>" }));
     }
     app.appendChild(exp);
 
@@ -241,23 +254,26 @@
 
   function renderProblem() {
     var cur = state.current;
-    var idx = PROBLEMS.findIndex(function (p) { return p.id === cur.id; });
-    var p = PROBLEMS[idx];
+    var set = SETS[state.set];
+    var list = set.list;
+    var idx = list.findIndex(function (p) { return p.id === cur.id; });
+    var p = list[idx];
 
-    app.appendChild(el("button", { class: "link back", text: "← 問題一覧", onclick: function () { state.view = "list"; render(); } }));
+    app.appendChild(el("button", { class: "link back", text: "← " + set.label + "の問題一覧", onclick: function () { state.view = set.view; render(); } }));
 
     renderQuestion(p, cur, "問" + p.id, function (ok) {
-      var r = record[p.id] || { tries: 0, correct: false };
+      var key = set.prefix + p.id;
+      var r = record[key] || { tries: 0, correct: false };
       r.tries += 1;
       if (ok) r.correct = true;
-      record[p.id] = r;
+      record[key] = r;
       saveRecord();
     });
 
     // 前後
     var nav = el("div", { class: "row pager" });
-    if (idx > 0) nav.appendChild(el("button", { class: "btn ghost", text: "← 前の問題", onclick: function () { openProblem(PROBLEMS[idx - 1].id); } }));
-    if (idx < PROBLEMS.length - 1) nav.appendChild(el("button", { class: "btn ghost", text: "次の問題 →", onclick: function () { openProblem(PROBLEMS[idx + 1].id); } }));
+    if (idx > 0) nav.appendChild(el("button", { class: "btn ghost", text: "← 前の問題", onclick: function () { openProblem(state.set, list[idx - 1].id); } }));
+    if (idx < list.length - 1) nav.appendChild(el("button", { class: "btn ghost", text: "次の問題 →", onclick: function () { openProblem(state.set, list[idx + 1].id); } }));
     app.appendChild(nav);
   }
 
@@ -331,17 +347,25 @@
   // ---------- 共通 ----------
 
   function renderProgress() {
-    var solved = PROBLEMS.filter(function (p) { return record[p.id] && record[p.id].correct; }).length;
-    document.getElementById("progress").textContent = "正解した問題：" + solved + " / " + PROBLEMS.length;
+    var text = Object.keys(SETS).map(function (k) {
+      var set = SETS[k];
+      var solved = set.list.filter(function (p) {
+        var r = record[set.prefix + p.id];
+        return r && r.correct;
+      }).length;
+      return set.label + " " + solved + " / " + set.list.length;
+    });
+    document.getElementById("progress").textContent = "正解した問題：" + text.join("　");
   }
 
   function render() {
     app.innerHTML = "";
     document.querySelectorAll(".tab").forEach(function (t) {
       var v = t.getAttribute("data-view");
-      t.classList.toggle("active", v === state.view || (v === "list" && state.view === "problem"));
+      t.classList.toggle("active", v === state.view || (state.view === "problem" && v === SETS[state.set].view));
     });
-    if (state.view === "list") renderList();
+    if (state.view === "list") renderList("noudo");
+    else if (state.view === "hard") renderList("hard");
     else if (state.view === "tips") renderTips();
     else if (state.view === "practice") renderPractice();
     else renderProblem();
