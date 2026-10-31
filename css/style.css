@@ -279,6 +279,14 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
   pointer-events: none;
   white-space: nowrap;
 }
+.clock { width: 100%; max-width: 220px; display: block; margin: 4px auto; }
+.clock .face { fill: var(--panel); stroke: var(--text); stroke-width: 2; }
+.clock .tick { stroke: var(--muted); stroke-width: 1; }
+.clock .num { fill: var(--text); font-size: 15px; text-anchor: middle; }
+.clock .hour { stroke: var(--text); stroke-width: 6; stroke-linecap: round; }
+.clock .minute { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.clock .pin { fill: var(--text); }
+.clock-slider { width: 100%; max-width: 420px; accent-color: var(--accent); }
 .sim-info { font-size: 0.9rem; background: var(--bg); border-radius: 8px; padding: 8px 12px; margin: 8px 0 0; }
 
 .fig-table { border-collapse: collapse; font-size: 0.9rem; min-width: 280px; }

@@ -298,11 +298,16 @@
   }
 
   function renderGuide() {
-    var keys = Object.keys(GUIDES);
+    // 問題の分野と同じ順にならべる
+    var order = [];
+    SETS.hard.list.forEach(function (p) {
+      if (order.indexOf(p.category) < 0) order.push(p.category);
+    });
+    var keys = order.filter(function (c) { return GUIDES[c]; });
     if (!GUIDES[state.guide]) state.guide = keys[0];
     var g = GUIDES[state.guide];
 
-    app.appendChild(el("p", { class: "lead", text: "分野ごとの解き方を、例題を使ってくわしく説明します。読んだら、その分野の問題にチャレンジしよう。" }));
+    app.appendChild(el("p", { class: "lead", text: "分野を選ぶと、解き方を例題・図・表でくわしく説明します。読んだら、その分野の問題にチャレンジしよう。" }));
     app.appendChild(el("div", { class: "filter" }, keys.map(function (k) {
       return el("button", {
         class: "chip" + (state.guide === k ? " active" : ""),
