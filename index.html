@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>算数マスター</title>
-  <link rel="stylesheet" href="css/style.css?v=2.3.0">
+  <link rel="stylesheet" href="css/style.css?v=2.4.0">
 </head>
 <body>
   <header class="app-header">
@@ -19,10 +19,14 @@
         <span class="section-desc">角度・面積・特殊算など</span>
       </button>
     </nav>
-    <nav class="tabs" id="subtabs" aria-label="濃度マスターのメニュー">
+    <nav class="tabs" data-section="noudo" aria-label="濃度マスターのメニュー">
       <button data-view="list" class="tab active">問題</button>
       <button data-view="practice" class="tab">練習（自動）</button>
       <button data-view="tips" class="tab">解き方のコツ</button>
+    </nav>
+    <nav class="tabs" data-section="hard" aria-label="難問チャレンジのメニュー" hidden>
+      <button data-view="hard" class="tab">問題</button>
+      <button data-view="guide" class="tab">解き方ガイド</button>
     </nav>
   </header>
 
@@ -30,13 +34,14 @@
 
   <footer class="app-footer">
     <span id="progress"></span>
-    <span class="version">v2.3.0</span>
+    <span class="version">v2.4.0</span>
     <button id="reset" class="link">記録をリセット</button>
   </footer>
 
-  <script src="js/problems.js?v=2.3.0"></script>
-  <script src="js/hard-problems.js?v=2.3.0"></script>
-  <script src="js/generator.js?v=2.3.0"></script>
-  <script src="js/app.js?v=2.3.0"></script>
+  <script src="js/problems.js?v=2.4.0"></script>
+  <script src="js/hard-problems.js?v=2.4.0"></script>
+  <script src="js/guides.js?v=2.4.0"></script>
+  <script src="js/generator.js?v=2.4.0"></script>
+  <script src="js/app.js?v=2.4.0"></script>
 </body>
 </html>

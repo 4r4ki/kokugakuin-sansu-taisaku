@@ -3,7 +3,7 @@
 
   var STORAGE_KEY = "noudo-master-v1";
   var app = document.getElementById("app");
-  var state = { view: "list", set: "noudo", category: { noudo: "すべて", hard: "すべて" }, current: null, practice: null, practiceType: null };
+  var state = { view: "list", set: "noudo", guide: "ニュートン算", category: { noudo: "すべて", hard: "すべて" }, current: null, practice: null, practiceType: null };
 
   // 問題セット（濃度 / 難問）。記録のキーは prefix + id
   var SETS = {
@@ -158,6 +158,8 @@
 
     app.appendChild(el("p", { class: "lead", text: set.lead }));
     app.appendChild(filter);
+    var cat = state.category[setKey];
+    if (setKey === "hard" && window.GUIDES && GUIDES[cat]) app.appendChild(guideLink(cat));
     app.appendChild(list);
   }
 
@@ -270,11 +272,77 @@
       saveRecord();
     });
 
+    if (state.set === "hard" && window.GUIDES && GUIDES[p.category]) app.appendChild(guideLink(p.category));
+
     // 前後
     var nav = el("div", { class: "row pager" });
     if (idx > 0) nav.appendChild(el("button", { class: "btn ghost", text: "← 前の問題", onclick: function () { openProblem(state.set, list[idx - 1].id); } }));
     if (idx < list.length - 1) nav.appendChild(el("button", { class: "btn ghost", text: "次の問題 →", onclick: function () { openProblem(state.set, list[idx + 1].id); } }));
     app.appendChild(nav);
+  }
+
+  // ---------- 解き方ガイド（難問チャレンジ） ----------
+
+  function openGuide(cat) {
+    state.view = "guide";
+    state.guide = cat;
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function guideLink(cat) {
+    return el("button", { class: "guide-link", onclick: function () { openGuide(cat); } }, [
+      el("span", { class: "guide-link-title", text: cat + "の解き方ガイドを読む →" }),
+      el("span", { class: "guide-link-desc", text: "図とグラフで、解き方をステップごとに説明しています" }),
+    ]);
+  }
+
+  function renderGuide() {
+    var keys = Object.keys(GUIDES);
+    if (!GUIDES[state.guide]) state.guide = keys[0];
+    var g = GUIDES[state.guide];
+
+    app.appendChild(el("p", { class: "lead", text: "分野ごとの解き方を、例題を使ってくわしく説明します。読んだら、その分野の問題にチャレンジしよう。" }));
+    app.appendChild(el("div", { class: "filter" }, keys.map(function (k) {
+      return el("button", {
+        class: "chip" + (state.guide === k ? " active" : ""),
+        text: k,
+        onclick: function () { openGuide(k); },
+      });
+    })));
+
+    app.appendChild(el("section", { class: "problem" }, [
+      el("h2", { text: state.guide + "の解き方" }),
+      el("p", { class: "question", text: g.lead }),
+    ]));
+
+    g.sections.forEach(function (s, i) {
+      var box = el("section", { class: "box guide" }, [
+        el("h3", {}, [el("span", { class: "step-no", text: String(i + 1) }), " " + s.title]),
+        el("div", { class: "guide-body", html: s.html }),
+        figure(s.fig),
+      ]);
+      if (s.widget && window.GUIDE_WIDGETS && GUIDE_WIDGETS[s.widget]) box.appendChild(GUIDE_WIDGETS[s.widget]());
+      app.appendChild(box);
+    });
+
+    // この分野の問題へ
+    var probs = SETS.hard.list.filter(function (p) { return p.category === state.guide; });
+    var practice = el("section", { class: "box" }, [el("h3", { text: "練習しよう：" + state.guide + "の問題（" + probs.length + "問）" })]);
+    var cards = el("div", { class: "cards" });
+    probs.forEach(function (p) {
+      var r = record[SETS.hard.prefix + p.id];
+      cards.appendChild(el("button", { class: "card", onclick: function () { openProblem("hard", p.id); } }, [
+        el("div", { class: "card-top" }, [
+          el("span", { class: "num", text: "問" + (p.no || p.id) }),
+          el("span", { class: "level", text: stars(p.level) }),
+          r && r.correct ? el("span", { class: "badge ok", text: "正解" }) : null,
+        ]),
+        el("div", { class: "card-title", text: p.title }),
+      ]));
+    });
+    practice.appendChild(cards);
+    app.appendChild(practice);
   }
 
   // ---------- 練習（自動生成） ----------
@@ -360,7 +428,7 @@
 
   // いま表示しているコーナー（濃度マスター / 難問チャレンジ）
   function currentSection() {
-    if (state.view === "hard") return "hard";
+    if (state.view === "hard" || state.view === "guide") return "hard";
     if (state.view === "problem") return state.set;
     return "noudo";
   }
@@ -372,14 +440,17 @@
     document.querySelectorAll(".section-tab").forEach(function (t) {
       t.classList.toggle("active", t.getAttribute("data-section") === section);
     });
-    // 「問題・練習・コツ」は濃度マスターの中のメニュー
-    document.getElementById("subtabs").hidden = section !== "noudo";
+    // コーナーの中のメニュー（濃度：問題・練習・コツ／難問：問題・解き方ガイド）
+    document.querySelectorAll("nav.tabs").forEach(function (n) {
+      n.hidden = n.getAttribute("data-section") !== section;
+    });
     document.querySelectorAll(".tab").forEach(function (t) {
       var v = t.getAttribute("data-view");
-      t.classList.toggle("active", v === state.view || (state.view === "problem" && v === "list"));
+      t.classList.toggle("active", v === state.view || (state.view === "problem" && v === SETS[state.set].view));
     });
     if (state.view === "list") renderList("noudo");
     else if (state.view === "hard") renderList("hard");
+    else if (state.view === "guide") renderGuide();
     else if (state.view === "tips") renderTips();
     else if (state.view === "practice") renderPractice();
     else renderProblem();
