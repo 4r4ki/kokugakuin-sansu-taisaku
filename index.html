@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>算数マスター</title>
-  <link rel="stylesheet" href="css/style.css?v=2.7.0">
+  <link rel="stylesheet" href="css/style.css?v=2.8.0">
 </head>
 <body>
   <header class="app-header">
@@ -18,6 +18,10 @@
         <span class="section-name">難問チャレンジ</span>
         <span class="section-desc">角度・面積・特殊算など</span>
       </button>
+      <button data-section="exam" class="section-tab">
+        <span class="section-name">入試対策</span>
+        <span class="section-desc">計算・穴埋め・図形・記述</span>
+      </button>
     </nav>
     <nav class="tabs" data-section="noudo" aria-label="濃度マスターのメニュー">
       <button data-view="list" class="tab active">問題</button>
@@ -28,21 +32,30 @@
       <button data-view="hard" class="tab">問題</button>
       <button data-view="guide" class="tab">解き方ガイド</button>
     </nav>
+    <nav class="tabs" data-section="exam" aria-label="入試対策のメニュー" hidden>
+      <button data-view="calc" class="tab">計算（大問1）</button>
+      <button data-view="fill" class="tab">穴埋め（大問2）</button>
+      <button data-view="std" class="tab">図形・文章題（大問3〜5）</button>
+      <button data-view="mock" class="tab">ミニテスト</button>
+      <button data-view="examtips" class="tab">記述のコツ</button>
+    </nav>
   </header>
 
   <main id="app"></main>
 
   <footer class="app-footer">
     <span id="progress"></span>
-    <span class="version">v2.7.0</span>
+    <span class="version">v2.8.0</span>
     <button id="reset" class="link">記録をリセット</button>
   </footer>
 
-  <script src="js/problems.js?v=2.7.0"></script>
-  <script src="js/hard-problems.js?v=2.7.0"></script>
-  <script src="js/guides.js?v=2.7.0"></script>
-  <script src="js/guides-more.js?v=2.7.0"></script>
-  <script src="js/generator.js?v=2.7.0"></script>
-  <script src="js/app.js?v=2.7.0"></script>
+  <script src="js/problems.js?v=2.8.0"></script>
+  <script src="js/hard-problems.js?v=2.8.0"></script>
+  <script src="js/guides.js?v=2.8.0"></script>
+  <script src="js/guides-more.js?v=2.8.0"></script>
+  <script src="js/generator.js?v=2.8.0"></script>
+  <script src="js/exam-gen.js?v=2.8.0"></script>
+  <script src="js/exam-std.js?v=2.8.0"></script>
+  <script src="js/app.js?v=2.8.0"></script>
 </body>
 </html>
