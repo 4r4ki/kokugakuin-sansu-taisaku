@@ -304,3 +304,34 @@ main { max-width: 760px; margin: 0 auto; padding: 16px; }
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* 入試対策は緑で区別する */
+body[data-section="exam"] {
+  --accent: #15803d;
+  --accent-soft: #e7f6ec;
+}
+@media (prefers-color-scheme: dark) {
+  body[data-section="exam"] {
+    --accent: #5fd38d;
+    --accent-soft: #1a3324;
+  }
+}
+
+/* 分数（縦に書く） */
+.frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 2px; line-height: 1.15; font-size: 0.9em; }
+.frac > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 3px; }
+.frac > span:last-child { padding: 0 3px; }
+.calc-expr { font-size: 1.25em; margin: 10px 0 4px; padding: 8px 12px; background: var(--accent-soft); border-radius: 8px; overflow-x: auto; }
+.box-blank { display: inline-block; border: 2px solid var(--text); padding: 0 6px; line-height: 1.3; }
+
+/* 記述の答案例 */
+.kijutsu { border: 1.5px dashed var(--accent); border-radius: 8px; padding: 10px 14px; background: var(--panel); }
+.kijutsu > div { padding: 2px 0; }
+.kijutsu .kj-ans { margin-top: 6px; font-weight: bold; border-top: 1px solid var(--line); padding-top: 6px; }
+
+/* ミニテスト */
+.mock-q.ok { border-color: var(--ok); }
+.mock-q.ng { border-color: var(--ng); }
+.mock-q .answer { margin-top: 8px; }
+.mock-exp summary { cursor: pointer; color: var(--accent); }
+.mock-exp .step-body { margin: 6px 0; }

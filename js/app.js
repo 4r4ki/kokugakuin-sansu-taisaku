@@ -3,7 +3,18 @@
 
   var STORAGE_KEY = "noudo-master-v1";
   var app = document.getElementById("app");
-  var state = { view: "list", set: "noudo", guide: "ニュートン算", category: { noudo: "すべて", hard: "すべて" }, current: null, practice: null, practiceType: null };
+  var state = { view: "list", set: "noudo", guide: "ニュートン算", category: { noudo: "すべて", hard: "すべて", std: "すべて" }, current: null,
+    practice: {}, practiceType: {}, mock: null };
+
+  // 自動生成の練習（濃度／入試対策の計算・穴埋め）。記録のキーは stat
+  var PRACTICES = {
+    practice: { gen: function () { return window.PRACTICE; }, stat: "_practice",
+      lead: "数字が毎回かわる練習問題です。解き方は同じなので、何回でもチャレンジしよう。" },
+    calc: { gen: function () { return window.EXAM_GEN.calc; }, stat: "_calc",
+      lead: "大問1（計算問題・基礎〜標準）の練習です。数字は毎回かわります。答えが分数のときは「5/6」や「1と2/3」のように入力します。" },
+    fill: { gen: function () { return window.EXAM_GEN.fill; }, stat: "_fill",
+      lead: "大問2（穴埋め：単位換算・割合・比など）の練習です。□にあてはまる数を答えよう。単位は答えらんの右に出ています。" },
+  };
 
   // 問題セット（濃度 / 難問）。記録のキーは prefix + id
   var SETS = {
@@ -11,6 +22,8 @@
       lead: "入試によく出る濃度の問題を集めました。まず自分で解いてから、ヒント・解説を見よう。" },
     hard: { list: window.HARD_PROBLEMS, prefix: "h", view: "hard", label: "難問",
       lead: "角度・面積・特殊算・速さ・売買損益などの難問です。図や表をかいて、じっくり考えよう。答えが分数のときは「3/11」や「16と4/11」のように入力できます。" },
+    std: { list: window.STD_PROBLEMS, prefix: "s", view: "std", label: "入試対策",
+      lead: "大問3（図形：角度・長さ・面積・体積）と、大問4・5（文章題を記述形式で）の標準問題です。文章題は、解説の最後の「記述の答案例」と見くらべて、式と考え方を書く練習をしよう。" },
   };
   var record = loadRecord();
 
@@ -182,7 +195,7 @@
         el("span", { class: "card-cat", text: p.category }),
       ]),
       el("h2", { text: p.title }),
-      el("p", { class: "question", text: p.question }),
+      p.questionHtml ? el("div", { class: "question", html: p.questionHtml }) : el("p", { class: "question", text: p.question }),
       figure(p.fig),
     ]));
 
@@ -352,23 +365,25 @@
 
   // ---------- 練習（自動生成） ----------
 
-  function newPractice() {
-    state.practice = { problem: PRACTICE.make(state.practiceType), hints: 0, steps: 0, result: null, answered: false };
+  function newPractice(kind) {
+    state.practice[kind] = { problem: PRACTICES[kind].gen().make(state.practiceType[kind] || null), hints: 0, steps: 0, result: null, answered: false };
   }
 
-  function renderPractice() {
-    if (!state.practice) newPractice();
-    var cur = state.practice;
-    var stats = record._practice || { tries: 0, correct: 0, streak: 0, best: 0 };
+  function renderPractice(kind) {
+    var conf = PRACTICES[kind], gen = conf.gen();
+    if (!state.practice[kind]) newPractice(kind);
+    var cur = state.practice[kind];
+    var stats = record[conf.stat] || { tries: 0, correct: 0, streak: 0, best: 0 };
+    var type = state.practiceType[kind] || null;
 
-    app.appendChild(el("p", { class: "lead", text: "数字が毎回かわる練習問題です。解き方は同じなので、何回でもチャレンジしよう。" }));
+    app.appendChild(el("p", { class: "lead", text: conf.lead }));
 
-    var types = [{ key: null, name: "ランダム" }].concat(PRACTICE.types);
+    var types = [{ key: null, name: "ランダム" }].concat(gen.types);
     app.appendChild(el("div", { class: "filter" }, types.map(function (t) {
       return el("button", {
-        class: "chip" + (state.practiceType === t.key ? " active" : ""),
+        class: "chip" + (type === t.key ? " active" : ""),
         text: t.name,
-        onclick: function () { state.practiceType = t.key; newPractice(); render(); },
+        onclick: function () { state.practiceType[kind] = t.key; newPractice(kind); render(); },
       });
     })));
 
@@ -390,7 +405,7 @@
       } else {
         stats.streak = 0;
       }
-      record._practice = stats;
+      record[conf.stat] = stats;
       saveRecord();
     });
 
@@ -398,9 +413,86 @@
       el("button", {
         class: "btn primary",
         text: "次の練習問題（数字をかえる）→",
-        onclick: function () { newPractice(); render(); window.scrollTo(0, 0); },
+        onclick: function () { newPractice(kind); render(); window.scrollTo(0, 0); },
       }),
     ]));
+  }
+
+  // ---------- ミニテスト（大問1・大問2 形式、10問） ----------
+
+  function renderMock() {
+    var best = record._mock || { times: 0, best: 0 };
+    app.appendChild(el("p", { class: "lead", text: "本番の大問1（計算5問）と大問2（穴埋め5問）の形式で、10問まとめて解きます。目標は10分で全問正解。全部書いてから「採点する」を押そう。" }));
+    app.appendChild(el("div", { class: "stats" }, [
+      el("span", { text: "受けた回数 " + best.times }),
+      el("span", { text: "最高 " + best.best + " / 10問" }),
+    ]));
+    if (!state.mock) {
+      app.appendChild(el("div", { class: "row pager" }, [
+        el("button", { class: "btn primary", text: "ミニテストを始める", onclick: function () {
+          state.mock = { problems: EXAM_GEN.mock(), inputs: [], graded: false, start: Date.now() };
+          render();
+        } }),
+      ]));
+      return;
+    }
+    var m = state.mock;
+    m.problems.forEach(function (p, i) {
+      var head = (i < 5 ? "大問1 (" + (i + 1) + ")" : "大問2 (" + (i - 4) + ")") + "　" + p.title;
+      var input = el("input", { type: "text", inputmode: "decimal", placeholder: "答え", "aria-label": "答え" + (i + 1) });
+      if (m.inputs[i] != null) input.value = m.inputs[i];
+      input.addEventListener("input", function () { m.inputs[i] = input.value; });
+      var box = el("section", { class: "problem mock-q" + (m.graded ? (m.ok[i] ? " ok" : " ng") : "") }, [
+        el("div", { class: "card-top" }, [el("span", { class: "num", text: head }), m.graded ? el("span", { class: "badge " + (m.ok[i] ? "ok" : "try"), text: m.ok[i] ? "○" : "×" }) : null]),
+        el("div", { class: "question", html: p.questionHtml }),
+        el("div", { class: "answer" }, [input, el("span", { class: "unit", text: p.answer.unit })]),
+      ]);
+      if (m.graded) {
+        input.disabled = true;
+        box.appendChild(el("p", { class: "final", html: "答え：<b>" + (p.answer.text || p.answer.value) + p.answer.unit + "</b>" }));
+        var det = el("details", { class: "mock-exp" }, [el("summary", { text: "解き方を見る" })]);
+        p.steps.forEach(function (st) { det.appendChild(el("div", { class: "step-body", html: "<b>" + st.title + "</b>　" + st.html })); });
+        box.appendChild(det);
+      }
+      app.appendChild(box);
+    });
+    if (!m.graded) {
+      app.appendChild(el("div", { class: "row pager" }, [
+        el("button", { class: "btn primary", text: "採点する", onclick: function () {
+          m.ok = m.problems.map(function (p, i) {
+            var v = parseAnswer(m.inputs[i] || "");
+            return !isNaN(v) && Math.abs(v - p.answer.value) < 1e-6;
+          });
+          m.graded = true;
+          m.score = m.ok.filter(Boolean).length;
+          m.sec = Math.round((Date.now() - m.start) / 1000);
+          best.times += 1;
+          best.best = Math.max(best.best, m.score);
+          record._mock = best;
+          saveRecord();
+          render();
+          window.scrollTo(0, 0);
+        } }),
+      ]));
+    } else {
+      app.insertBefore(el("div", { class: "result " + (m.score >= 8 ? "ok" : "ng"), text: "結果：" + m.score + " / 10問正解（" + Math.floor(m.sec / 60) + "分" + (m.sec % 60) + "秒）" + (m.score === 10 ? "　全問正解！" : "　まちがえた問題は解き方を見て、同じ種類を「計算」「穴埋め」タブで練習しよう。") }), app.children[2]);
+      app.appendChild(el("div", { class: "row pager" }, [
+        el("button", { class: "btn primary", text: "新しいミニテスト →", onclick: function () {
+          state.mock = { problems: EXAM_GEN.mock(), inputs: [], graded: false, start: Date.now() };
+          render();
+          window.scrollTo(0, 0);
+        } }),
+      ]));
+    }
+  }
+
+  // ---------- 記述のコツ（入試対策） ----------
+
+  function renderExamTips() {
+    app.appendChild(el("p", { class: "lead", text: "出題のしくみと、記述形式の答案の書き方です。文章題の問題では、解説の最後に「記述の答案例」があります。" }));
+    EXAM_TIPS.forEach(function (t) {
+      app.appendChild(el("section", { class: "box" }, [el("h3", { text: t.title }), el("div", { html: t.html })]));
+    });
   }
 
   // ---------- コツ ----------
@@ -434,9 +526,12 @@
   // いま表示しているコーナー（濃度マスター / 難問チャレンジ）
   function currentSection() {
     if (state.view === "hard" || state.view === "guide") return "hard";
-    if (state.view === "problem") return state.set;
+    if (EXAM_VIEWS.indexOf(state.view) >= 0) return "exam";
+    if (state.view === "problem") return state.set === "std" ? "exam" : state.set;
     return "noudo";
   }
+
+  var EXAM_VIEWS = ["calc", "fill", "std", "mock", "examtips"];
 
   function render() {
     app.innerHTML = "";
@@ -457,13 +552,16 @@
     else if (state.view === "hard") renderList("hard");
     else if (state.view === "guide") renderGuide();
     else if (state.view === "tips") renderTips();
-    else if (state.view === "practice") renderPractice();
+    else if (state.view === "practice" || state.view === "calc" || state.view === "fill") renderPractice(state.view);
+    else if (state.view === "std") renderList("std");
+    else if (state.view === "mock") renderMock();
+    else if (state.view === "examtips") renderExamTips();
     else renderProblem();
   }
 
   document.querySelectorAll(".section-tab").forEach(function (t) {
     t.addEventListener("click", function () {
-      state.view = t.getAttribute("data-section") === "hard" ? "hard" : "list";
+      state.view = { hard: "hard", exam: "calc" }[t.getAttribute("data-section")] || "list";
       render();
     });
   });
